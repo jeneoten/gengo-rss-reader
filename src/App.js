@@ -23,7 +23,7 @@ class App extends React.Component {
         console.error(e)
         alert('ERROR:' + e.message)
       }
-    }, 45000);
+    }, 31000);
   }
 
   async makeCall() {
