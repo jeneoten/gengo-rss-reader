@@ -13,11 +13,13 @@ app.get('/status', (req, res) => {
 app.use('/', express.static(path.join(__dirname, '../build')))
 
 app.use('/gengo-rss', async (req, res) => {
+    // console.info(`${new Date().toLocaleString()} /gengo-rss`);
     const response = await axios.get(gengo_url);
-    console.info(`${new Date().toLocaleString()} /gengo-rss`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
     res.send(response.data)
 })
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+    console.log(`App listening at http://localhost:${port}`)
 })

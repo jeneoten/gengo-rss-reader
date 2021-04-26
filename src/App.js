@@ -11,64 +11,63 @@ class App extends React.Component {
         this.state = {
             stopped: false,
             includeDummies: false,
-            alertItems: [],
-            otherItems: [],
+            items: [],
             lastUpdate: null,
             includeStandard: false
         };
 
         this.makeCall();
         setInterval(async () => {
-            try {
-                if (!this.state.stopped) {
-                    await this.makeCall();
-                }
-            } catch (e) {
-                console.error(e)
-                alert('ERROR:' + e.message)
+            if (!this.state.stopped) {
+                await this.makeCall();
             }
         }, 31000);
     }
 
     async makeCall() {
-        let gengo_url = 'http://localhost:5000/gengo-rss'
+        try {
+            let gengo_url = 'http://localhost:5000/gengo-rss'
 
-        let feed = await parser.parseURL(gengo_url),
-        rawOutput = JSON.stringify(feed, null, 4);
+            let feed = await parser.parseURL(gengo_url),
+            rawOutput = JSON.stringify(feed, null, 4);
 
-        if (this.state.includeDummies) {
-            feed.items.push({
-                title: "(Pro) | job_240398 | 5 chars | Reward: US$0.24 | Japanese/English",
-                link: "https://gengo.com/t/jobs/details/yyyy?referral=rss"
-            })
-            feed.items.push({
-                title: "(Standard) | job_5555551 | 5 chars | Reward: US$0.24 | Japanese/English",
-                link: "https://gengo.com/t/jobs/details/xxxx?referral=rss"
-            })
+            if (this.state.includeDummies) {
+                feed.items.push({
+                    title: "(Pro) | job_240398 | 5 chars | Reward: US$0.24 | Japanese/English",
+                    link: "https://gengo.com/t/jobs/details/yyyy?referral=rss"
+                })
+                feed.items.push({
+                    title: "(Standard) | job_5555551 | 5 chars | Reward: US$0.24 | Japanese/English",
+                    link: "https://gengo.com/t/jobs/details/xxxx?referral=rss"
+                })
+            }
+
+            feed.items.forEach(item => {
+                const attribs = item.title.split(' | ');
+                const grade = attribs[0]
+                const id = attribs[1]
+                const ignored = !this.state.includeStandard && grade === '(Standard)'
+                const old = Boolean(
+                    this.state.items.find(lastStateItem => lastStateItem.key === id));
+
+                item.key = id
+                item.grade = attribs[0]
+                item.skipAlert = ignored || old;
+            });
+
+            let update = {
+                items: feed.items,
+                lastUpdate: new Date().toLocaleString(),
+                rawOutput
+            };
+
+            this.setState(Object.assign(this.state, update));
+        } catch (e) {
+            console.error(e)
+            // var typeWriter = new Audio("/bluedanube.mp3");
+            // typeWriter.play()
+            alert('ERROR:' + e.message)
         }
-
-        feed.items.forEach(item => {
-            const attribs = item.title.split(' | ');
-            const ignored = !this.state.includeStandard && item.grade === '(Standard)'
-            const old = Boolean(
-                this.state.alertItems.concat(this.state.otherItems)
-                .find(lastStateItem => lastStateItem.key === item.key));
-
-            item.key = item.link
-            item.grade = attribs[0]
-            item.skipAlert = ignored || old;
-        });
-
-        let alertItems = feed.items.filter(item => !item.skipAlert),
-        otherItems = feed.items.filter(item => item.skipAlert),
-        update = {
-            alertItems,
-            otherItems,
-            lastUpdate: new Date().toLocaleString(),
-            rawOutput
-        };
-
-        this.setState(Object.assign(this.state, update));
     }
 
     handleStandardToggleClick() {
@@ -93,6 +92,9 @@ class App extends React.Component {
     }
 
     render() {
+        const alertItems = this.state.items.filter(item => !item.skipAlert)
+        const otherItems = this.state.items.filter(item => item.skipAlert)
+
         return (
             <div className="App">
                 <h1 className="App-header">
@@ -132,7 +134,7 @@ class App extends React.Component {
                 </div>
 
                 <h2>New Items</h2>
-                {this.state.alertItems.map(x => (
+                {alertItems.map(x => (
                     <div>
                     <div>
                     {x.title}
@@ -144,7 +146,7 @@ class App extends React.Component {
                 ))}
 
                 <h2>Other Items</h2>
-                {this.state.otherItems.map(x => (
+                {otherItems.map(x => (
                     <div>
                         <div>
                             {x.title}
@@ -155,7 +157,7 @@ class App extends React.Component {
                     </div>
                 ))}
 
-                {this.state.alertItems.length > 0 ? (
+                {alertItems.length > 0 ? (
                     <div id="audio-alert">
                         <audio
                             autoPlay
@@ -178,12 +180,14 @@ class App extends React.Component {
     }
 
     componentDidUpdate () {
+        const alertItems = this.state.items.filter(item => !item.skipAlert)
+
         if (this.state.stopped) {
             document.title = '*STOPPED* Gengo Reader'
         } else {
             document.title = 'Gengo Reader'
         }
-        if (this.state.alertItems.length > 0) {
+        if (alertItems.length > 0) {
             alert('Hello')
         }
     }
