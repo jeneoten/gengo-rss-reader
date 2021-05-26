@@ -13,10 +13,13 @@ class App extends React.Component {
             includeDummies: false,
             items: [],
             lastUpdate: null,
-            includeStandard: false
+            includeStandard: false,
+            minimumPay: 0,
         };
+    }
 
-        this.makeCall();
+    async componentWillMount() {
+        // do not put this in constructor because it runs twice in dev mode
         setInterval(async () => {
             if (!this.state.stopped) {
                 await this.makeCall();
@@ -26,14 +29,15 @@ class App extends React.Component {
 
     async makeCall() {
         try {
-            let gengo_url = 'http://localhost:5000/gengo-rss'
+            let feed;
 
-            let feed = await parser.parseURL(gengo_url),
-            rawOutput = JSON.stringify(feed, null, 4);
-
-            if (this.state.includeDummies) {
+            if (!this.state.includeDummies) {
+                let gengo_url = 'http://localhost:5000/gengo-rss'
+                feed = await parser.parseURL(gengo_url)
+            } else {
+                feed = {items: []}
                 feed.items.push({
-                    title: "(Pro) | job_240398 | 5 chars | Reward: US$0.24 | Japanese/English",
+                    title: "(Pro) | job_240398 | 5 chars | Reward: US$1.24 | Japanese/English",
                     link: "https://gengo.com/t/jobs/details/yyyy?referral=rss"
                 })
                 feed.items.push({
@@ -42,14 +46,22 @@ class App extends React.Component {
                 })
             }
 
+            let rawOutput = JSON.stringify(feed, null, 4);
+
             feed.items.forEach(item => {
                 const attribs = item.title.split(' | ');
                 const grade = attribs[0]
                 const id = attribs[1]
-                const ignored = !this.state.includeStandard && grade === '(Standard)'
+                const pay = parseFloat(
+                    attribs[3].substring(attribs[3].indexOf('US$') + 3))
+
+                const ignored = pay < this.state.minimumPay
+                    || (!this.state.includeStandard && grade === '(Standard)');
+
                 const old = Boolean(
                     this.state.items.find(lastStateItem => lastStateItem.key === id));
 
+                item.pay = pay
                 item.key = id
                 item.grade = attribs[0]
                 item.skipAlert = ignored || old;
@@ -91,6 +103,20 @@ class App extends React.Component {
         this.setState(Object.assign(this.state, update));
     }
 
+    handleMinimumPayUpdate(inputValue) {
+        let minValue;
+        if (inputValue === "") {
+            minValue = 0
+        } else {
+            minValue = parseFloat(inputValue)
+        }
+
+        let update = {
+            minimumPay: minValue
+        }
+        this.setState(Object.assign(this.state, update));
+    }
+
     render() {
         const alertItems = this.state.items.filter(item => !item.skipAlert)
         const otherItems = this.state.items.filter(item => item.skipAlert)
@@ -121,6 +147,13 @@ class App extends React.Component {
                         onChange={() => this.handleDummyToggleClick()}
                     />
                     Include Dummies
+                </div>
+
+                <div>
+                    Minimum Pay
+                    <input onChange={
+                        (event) => this.handleMinimumPayUpdate(event.target.value)
+                    }/>
                 </div>
 
                 <div>
@@ -162,7 +195,7 @@ class App extends React.Component {
                         <audio
                             autoPlay
                             controls
-                            src="/bluedanube.mp3">
+                            src="/bluedanube_3s.mp3">
                             audio here
                         </audio>
                     </div>
