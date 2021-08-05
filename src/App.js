@@ -13,8 +13,9 @@ class App extends React.Component {
             includeDummies: false,
             items: [],
             lastUpdate: null,
-            includeStandard: false,
+            includeAllTypes: false,
             minimumPay: 0,
+            useBrowserAlert: false,
         };
     }
 
@@ -56,7 +57,7 @@ class App extends React.Component {
                     attribs[3].substring(attribs[3].indexOf('US$') + 3))
 
                 const ignored = pay < this.state.minimumPay
-                    || (!this.state.includeStandard && grade === '(Standard)');
+                    || (!this.state.includeAllTypes && grade !== '(Pro)');
 
                 const old = Boolean(
                     this.state.items.find(lastStateItem => lastStateItem.key === id));
@@ -78,13 +79,17 @@ class App extends React.Component {
             console.error(e)
             // var typeWriter = new Audio("/bluedanube.mp3");
             // typeWriter.play()
-            alert('ERROR:' + e.message)
+            // alert('ERROR:' + e.message)
+            let update = {
+                rawOutput: e.message
+            };
+            this.setState(Object.assign(this.state, update));
         }
     }
 
     handleStandardToggleClick() {
         let update = {
-            includeStandard: !this.state.includeStandard
+            includeAllTypes: !this.state.includeAllTypes
         }
         this.setState(Object.assign(this.state, update));
     }
@@ -99,6 +104,13 @@ class App extends React.Component {
     handleDummyToggleClick() {
         let update = {
             includeDummies: !this.state.includeDummies
+        }
+        this.setState(Object.assign(this.state, update));
+    }
+
+    handleBrowserAlertToggleClick() {
+        let update = {
+            useBrowserAlert: !this.state.useBrowserAlert
         }
         this.setState(Object.assign(this.state, update));
     }
@@ -129,10 +141,10 @@ class App extends React.Component {
 
                 <div>
                     <input
-                        type="checkbox" checked={this.state.includeStandard}
+                        type="checkbox" checked={this.state.includeAllTypes}
                         onChange={() => this.handleStandardToggleClick()}
                     />
-                    Include Standard Items
+                    Include Standard/Edit
                 </div>
                 <div>
                     <input
@@ -147,6 +159,13 @@ class App extends React.Component {
                         onChange={() => this.handleDummyToggleClick()}
                     />
                     Include Dummies
+                </div>
+                <div>
+                    <input
+                        type="checkbox" checked={this.state.useBrowserAlert}
+                        onChange={() => this.handleBrowserAlertToggleClick()}
+                    />
+                    Use Browser Alert
                 </div>
 
                 <div>
@@ -220,7 +239,7 @@ class App extends React.Component {
         } else {
             document.title = 'Gengo Reader'
         }
-        if (alertItems.length > 0) {
+        if (this.state.useBrowserAlert && alertItems.length > 0) {
             alert('Hello')
         }
     }
