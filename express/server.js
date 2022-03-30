@@ -20,10 +20,14 @@ app.use('/', express.static(path.join(__dirname, '../build')))
 
 app.use('/gengo-rss', async (req, res) => {
     // console.info(`${new Date().toLocaleString()} /gengo-rss`);
-    const response = await instance.get(gengo_url);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
-    res.send(response.data)
+    try{
+        const response = await instance.get(gengo_url);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.send(response.data)
+    } catch (e) {
+        console.error(`${new Date().toLocaleString()} ${e.message}`)
+    }
 })
 
 app.listen(port, () => {
