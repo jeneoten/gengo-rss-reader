@@ -25,7 +25,7 @@ class App extends React.Component {
             if (!this.state.stopped) {
                 await this.makeCall();
             }
-        }, 31000);
+        }, 61000);
     }
 
     async makeCall() {
